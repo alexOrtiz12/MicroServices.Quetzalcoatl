@@ -1,0 +1,6 @@
+@Microservices.Quetzalcoatl.Almacen_HostAddress = http://localhost:5136
+
+GET {{Microservices.Quetzalcoatl.Almacen_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

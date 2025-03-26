@@ -1,0 +1,6 @@
+@MicroServices.Quetzalcoatl.Proveedores_HostAddress = http://localhost:5027
+
+GET {{MicroServices.Quetzalcoatl.Proveedores_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
