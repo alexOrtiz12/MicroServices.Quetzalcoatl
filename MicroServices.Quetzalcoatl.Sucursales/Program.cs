@@ -2,22 +2,26 @@ using MicroServices.Quetzalcoatl.Sucursales.Data;
 using MicroServices.Quetzalcoatl.Sucursales.Extensions;
 using Microsoft.EntityFrameworkCore;
 using MySql.EntityFrameworkCore.Extensions;
-using DotNetEnv;  // Importar la librería
+using DotNetEnv; 
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Cargar variables de entorno desde el archivo .env
+
 Env.Load();
 
-// Construir la cadena de conexión desde variables separadas
-var server = Environment.GetEnvironmentVariable("DB_SERVER") ?? throw new InvalidOperationException("DB_SERVER no está configurado.");
+// Construir la cadena de conexión desde variables
+var server = Environment.GetEnvironmentVariable("DB_SERVER") ?? 
+    throw new InvalidOperationException("DB_SERVER no está configurado.");
 var port = Environment.GetEnvironmentVariable("DB_PORT") ?? "3306";
-var database = Environment.GetEnvironmentVariable("DB_NAME") ?? throw new InvalidOperationException("DB_NAME no está configurado.");
-var user = Environment.GetEnvironmentVariable("DB_USER") ?? throw new InvalidOperationException("DB_USER no está configurado.");
-var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? throw new InvalidOperationException("DB_PASSWORD no está configurado.");
+var database = Environment.GetEnvironmentVariable("DB_NAME") ?? 
+    throw new InvalidOperationException("DB_NAME no está configurado.");
+var user = Environment.GetEnvironmentVariable("DB_USER") ?? 
+    throw new InvalidOperationException("DB_USER no está configurado.");
+var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? 
+    throw new InvalidOperationException("DB_PASSWORD no está configurado.");
 var ssl = Environment.GetEnvironmentVariable("DB_SSL") ?? "Required";
 
-// Crear la cadena de conexión
+// cadena de conexión
 var connectionString = $"Server={server};Port={port};Database={database};User Id={user};Password={password};SslMode={ssl};";
 
 builder.Services.AddDbContext<SucursalesDbContext>(options =>

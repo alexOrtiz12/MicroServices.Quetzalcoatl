@@ -1,13 +1,33 @@
+using DotNetEnv;
 using MicroServices.Quetzalcoatl.ActivosFijos.Data;
 using MicroServices.Quetzalcoatl.ActivosFijos.Extensions;
 using Microsoft.EntityFrameworkCore;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configuración de MySQL con la cadena de conexión desde appsettings.json
+
+Env.Load();
+
+// Construir la cadena de conexión desde variables
+var server = Environment.GetEnvironmentVariable("DB_SERVER") ??
+    throw new InvalidOperationException("DB_SERVER no está configurado.");
+var port = Environment.GetEnvironmentVariable("DB_PORT") ?? "3306";
+var database = Environment.GetEnvironmentVariable("DB_NAME") ??
+    throw new InvalidOperationException("DB_NAME no está configurado.");
+var user = Environment.GetEnvironmentVariable("DB_USER") ??
+    throw new InvalidOperationException("DB_USER no está configurado.");
+var password = Environment.GetEnvironmentVariable("DB_PASSWORD") ??
+    throw new InvalidOperationException("DB_PASSWORD no está configurado.");
+var ssl = Environment.GetEnvironmentVariable("DB_SSL") ?? "Required";
+
+// cadena de conexión
+var connectionString = $"Server={server};Port={port};Database={database};User Id={user};Password={password};SslMode={ssl};";
+
+
 builder.Services.AddDbContext<ActivoFijoDbContext>(options =>
     options.UseMySQL(
-        builder.Configuration.GetConnectionString("DefaultConnection")
+        builder.Configuration.GetConnectionString(connectionString)
     )
 );
 
