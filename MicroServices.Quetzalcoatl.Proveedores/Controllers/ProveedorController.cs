@@ -10,103 +10,108 @@ using System.Threading.Tasks;
 
 namespace MicroServices.Quetzalcoatl.Proveedores.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    [EnableCors("PermitirSoloCliente")]
-    public class ProveedorController : ControllerBase
-    {
-        private readonly ProveedorDbContext _context;
+     [Route("api/[controller]")]
+ [ApiController]
+ [EnableCors("PermitirSoloCliente")]
+ public class ProveedorController : ControllerBase
+ {
+     private readonly ProveedorDbContext _context;
 
-        public ProveedorController(ProveedorDbContext context)
-        {
-            _context = context;
-        }
+     public ProveedorController(ProveedorDbContext context)
+     {
+         _context = context;
+     }
 
-        // GET: api/proveedores
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Proveedor>>> GetProveedores(
-            string? nombre = null, string? tipo = null, string? estatus = null)
-        {
-            IQueryable<Proveedor> query = _context.Proveedores;
+     //  GET: api/proveedores
+     [HttpGet]
+     public async Task<ActionResult<IEnumerable<Proveedor>>> GetProveedores(
+         string? nombre = null, string? tipo = null, string? estatus = null)
+     {
+         IQueryable<Proveedor> query = _context.Proveedores.AsNoTracking(); // Evita modificaciones accidentales
 
-            if (!string.IsNullOrEmpty(nombre))
-                query = query.Where(p => p.Nombre.Contains(nombre));
+         if (!string.IsNullOrEmpty(nombre))
+             query = query.Where(p => EF.Functions.Like(p.Nombre, $"%{nombre}%")); // Evita SQL Injection
 
-            if (!string.IsNullOrEmpty(tipo))
-                query = query.Where(p => p.Tipo == tipo);
+         if (!string.IsNullOrEmpty(tipo))
+             query = query.Where(p => p.Tipo == tipo);
 
-            if (!string.IsNullOrEmpty(estatus))
-                query = query.Where(p => p.Estatus == estatus);
+         if (!string.IsNullOrEmpty(estatus))
+             query = query.Where(p => p.Estatus == estatus);
 
-            return await query.ToListAsync();
-        }
+         return await query.ToListAsync();
+     }
 
-        // GET: api/proveedores/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Proveedor>> GetProveedor(int id)
-        {
-            var proveedor = await _context.Proveedores.FindAsync(id);
-            if (proveedor == null)
-                return NotFound(new { message = "Proveedor no encontrado" });
+     //  GET: api/proveedores/5
+     [HttpGet("{id:int}")]
+     public async Task<ActionResult<Proveedor>> GetProveedor(int id)
+     {
+         var proveedor = await _context.Proveedores.AsNoTracking()
+             .FirstOrDefaultAsync(p => p.ProveedorId == id);
 
-            return proveedor;
-        }
+         if (proveedor == null)
+             return NotFound(new { message = "Proveedor no encontrado" });
 
-        // POST: api/proveedores
-        [HttpPost]
-        public async Task<ActionResult<Proveedor>> PostProveedor(Proveedor proveedor)
-        {
-            if (string.IsNullOrEmpty(proveedor.Nombre) || string.IsNullOrEmpty(proveedor.Email))
-                return BadRequest(new { message = "Nombre y Email son obligatorios" });
+         return proveedor;
+     }
 
-            proveedor.FechaAlta = DateTime.UtcNow;
+     //  POST: api/proveedores
+     [HttpPost]
+     public async Task<ActionResult<Proveedor>> PostProveedor(Proveedor proveedor)
+     {
+         if (!ModelState.IsValid)
+             return BadRequest(ModelState);
 
-            _context.Proveedores.Add(proveedor);
-            await _context.SaveChangesAsync();
+         proveedor.Sanitize(); //  Limpia datos antes de guardarlos
+         proveedor.FechaAlta = DateTime.UtcNow;
 
-            return CreatedAtAction(nameof(GetProveedor), new { id = proveedor.ProveedorId }, proveedor);
-        }
+         _context.Proveedores.Add(proveedor);
+         await _context.SaveChangesAsync();
 
-        // PUT: api/proveedores/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutProveedor(int id, Proveedor proveedor)
-        {
-            if (id != proveedor.ProveedorId)
-                return BadRequest(new { message = "ID de proveedor no coincide" });
+         return CreatedAtAction(nameof(GetProveedor), new { id = proveedor.ProveedorId }, proveedor);
+     }
 
-            if (string.IsNullOrEmpty(proveedor.Nombre) || string.IsNullOrEmpty(proveedor.Email))
-                return BadRequest(new { message = "Nombre y Email son obligatorios" });
+     // 🔹 PUT: api/proveedores/5
+     [HttpPut("{id:int}")]
+     public async Task<IActionResult> PutProveedor(int id, Proveedor proveedor)
+     {
+         if (id != proveedor.ProveedorId)
+             return BadRequest(new { message = "ID de proveedor no coincide" });
 
-            _context.Entry(proveedor).State = EntityState.Modified;
+         if (!ModelState.IsValid)
+             return BadRequest(ModelState);
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!_context.Proveedores.Any(e => e.ProveedorId == id))
-                    return NotFound(new { message = "Proveedor no encontrado" });
+         proveedor.Sanitize(); // ✅ Limpia datos antes de actualizar
 
-                throw;
-            }
+         _context.Entry(proveedor).State = EntityState.Modified;
 
-            return NoContent();
-        }
+         try
+         {
+             await _context.SaveChangesAsync();
+         }
+         catch (DbUpdateConcurrencyException)
+         {
+             if (!await _context.Proveedores.AnyAsync(e => e.ProveedorId == id))
+                 return NotFound(new { message = "Proveedor no encontrado" });
 
-        // DELETE: api/proveedores/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProveedor(int id)
-        {
-            var proveedor = await _context.Proveedores.FindAsync(id);
-            if (proveedor == null)
-                return NotFound(new { message = "Proveedor no encontrado" });
+             throw;
+         }
 
-            _context.Proveedores.Remove(proveedor);
-            await _context.SaveChangesAsync();
+         return NoContent();
+     }
 
-            return NoContent();
-        }
-    }
+     // 🔹 DELETE: api/proveedores/5
+     [HttpDelete("{id:int}")]
+     public async Task<IActionResult> DeleteProveedor(int id)
+     {
+         var proveedor = await _context.Proveedores.FindAsync(id);
+         if (proveedor == null)
+             return NotFound(new { message = "Proveedor no encontrado" });
+
+         _context.Proveedores.Remove(proveedor);
+         await _context.SaveChangesAsync();
+
+         return NoContent();
+     }
+ }
 }
 
