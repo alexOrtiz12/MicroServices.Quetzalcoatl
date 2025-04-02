@@ -1,14 +1,14 @@
-﻿using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MicroServices.Quetzalcoatl.ActivosFijos.Data;
 using MicroServices.Quetzalcoatl.ActivosFijos.Models;
-using MicroServices.Quetzalcoatl.ActivosFijos.DTOs; // Importamos el DTO
+using MicroServices.Quetzalcoatl.ActivosFijos.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
+using System.Web; // Para HttpUtility.HtmlEncode()
 
 namespace MicroServices.Quetzalcoatl.ActivosFijos.Controllers
 {
@@ -62,21 +62,19 @@ namespace MicroServices.Quetzalcoatl.ActivosFijos.Controllers
 
         // GET: api/activosfijos/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<ActivoFijoDto>> GetActivoFijo(int id)
+        public async Task<ActionResult<ActivoFijoDetalleDto>> GetActivoFijo(int id)
         {
             var activo = await _context.ActivosFijos
-                .Include(a => a.Proveedor)
-                .Include(a => a.Sucursal)
                 .Where(a => a.ActivoFijoId == id)
-                .Select(a => new ActivoFijoDto
+                .Select(a => new ActivoFijoDetalleDto
                 {
                     ActivoFijoId = a.ActivoFijoId,
                     Nombre = a.Nombre,
                     Descripcion = a.Descripcion,
                     Serial = a.Serial,
                     FechaCompra = a.FechaCompra,
-                    Proveedor = a.Proveedor != null ? a.Proveedor.Nombre : "No asignado",
-                    Sucursal = a.Sucursal != null ? a.Sucursal.Nombre : "No asignado",
+                    ProveedorID = a.ProveedorID,
+                    SucursalID = a.SucursalID,
                     FechaAlta = a.FechaAlta,
                     FechaBaja = a.FechaBaja,
                     Estatus = a.Estatus
@@ -96,6 +94,8 @@ namespace MicroServices.Quetzalcoatl.ActivosFijos.Controllers
             if (string.IsNullOrEmpty(activoFijo.Nombre) || string.IsNullOrEmpty(activoFijo.Serial))
                 return BadRequest(new { message = "Nombre y Serial son obligatorios" });
 
+            // 🔹 Sanitizar entrada contra XSS
+            activoFijo.Sanitize();
             activoFijo.FechaAlta = DateTime.UtcNow;
 
             _context.ActivosFijos.Add(activoFijo);
@@ -113,6 +113,9 @@ namespace MicroServices.Quetzalcoatl.ActivosFijos.Controllers
 
             if (string.IsNullOrEmpty(activoFijo.Nombre) || string.IsNullOrEmpty(activoFijo.Serial))
                 return BadRequest(new { message = "Nombre y Serial son obligatorios" });
+
+            // 🔹 Sanitizar entrada contra XSS
+            activoFijo.Sanitize();
 
             _context.Entry(activoFijo).State = EntityState.Modified;
 
