@@ -1,0 +1,16 @@
+namespace MicroServices.Quetzalcoatl.ActivosFijos.DTOs
+{
+    public class ActivoFijoDetalleDto
+    {
+        public int ActivoFijoId { get; set; }
+        public string Nombre { get; set; }
+        public string Descripcion { get; set; }
+        public string Serial { get; set; }
+        public DateTime FechaCompra { get; set; }
+        public int? ProveedorID { get; set; } 
+        public int? SucursalID { get; set; }   
+        public DateTime FechaAlta { get; set; }
+        public DateTime? FechaBaja { get; set; }
+        public string Estatus { get; set; }
+    }
+}
